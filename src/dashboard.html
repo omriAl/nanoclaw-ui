@@ -1,0 +1,1629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NanoClaw Dashboard</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --bg-surface: #f7f8fa;
+    --bg-elevated: #ffffff;
+    --bg-hover: #f0f1f3;
+    --text: #1a1a2e;
+    --text-secondary: #6b7280;
+    --text-muted: #9ca3af;
+    --border: #e5e7eb;
+    --border-light: #f0f1f3;
+    --accent: #4f46e5;
+    --accent-hover: #4338ca;
+    --accent-light: #eef2ff;
+    --danger: #dc2626;
+    --danger-hover: #b91c1c;
+    --danger-light: #fef2f2;
+    --success: #16a34a;
+    --success-bg: #dcfce7;
+    --warning: #d97706;
+    --warning-bg: #fef3c7;
+    --muted-bg: #f3f4f6;
+    --muted-text: #6b7280;
+    --error-bg: #fef2f2;
+    --error-text: #dc2626;
+    --overlay: rgba(0, 0, 0, 0.4);
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+    --radius: 6px;
+    --radius-sm: 4px;
+    --mono: "SF Mono", "Cascadia Code", "Fira Code", Consolas, "Liberation Mono", Menlo, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111827;
+      --bg-surface: #1f2937;
+      --bg-elevated: #1f2937;
+      --bg-hover: #374151;
+      --text: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --border: #374151;
+      --border-light: #1f2937;
+      --accent: #818cf8;
+      --accent-hover: #6366f1;
+      --accent-light: #1e1b4b;
+      --danger: #f87171;
+      --danger-hover: #ef4444;
+      --danger-light: #450a0a;
+      --success: #4ade80;
+      --success-bg: #052e16;
+      --warning: #fbbf24;
+      --warning-bg: #451a03;
+      --muted-bg: #374151;
+      --muted-text: #9ca3af;
+      --error-bg: #450a0a;
+      --error-text: #fca5a5;
+      --overlay: rgba(0, 0, 0, 0.6);
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+      --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
+    }
+  }
+
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-elevated);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .toggle-switch {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    background: var(--muted-bg);
+    border-radius: 10px;
+    transition: background 0.2s;
+    cursor: pointer;
+  }
+
+  .toggle-switch.active {
+    background: var(--accent);
+  }
+
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+
+  .toggle-switch.active::after {
+    transform: translateX(16px);
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--sans);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-elevated);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn:hover {
+    background: var(--bg-hover);
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+
+  .btn-primary:hover {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+
+  .btn-danger {
+    color: var(--danger);
+    border-color: var(--danger);
+    background: transparent;
+  }
+
+  .btn-danger:hover {
+    background: var(--danger-light);
+  }
+
+  .btn-sm {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .btn-icon {
+    padding: 4px 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    line-height: 1;
+  }
+
+  .btn-icon:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+  }
+
+  /* Main */
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  /* Table */
+  .table-wrapper {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead {
+    background: var(--bg-surface);
+  }
+
+  th {
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: top;
+  }
+
+  tbody tr:hover {
+    background: var(--bg-hover);
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .cell-prompt {
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cell-mono {
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .cell-actions {
+    white-space: nowrap;
+    display: flex;
+    gap: 4px;
+  }
+
+  .cell-date {
+    white-space: nowrap;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  /* Status badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .badge-active {
+    background: var(--success-bg);
+    color: var(--success);
+  }
+
+  .badge-paused {
+    background: var(--warning-bg);
+    color: var(--warning);
+  }
+
+  .badge-completed {
+    background: var(--muted-bg);
+    color: var(--muted-text);
+  }
+
+  .badge-success {
+    background: var(--success-bg);
+    color: var(--success);
+  }
+
+  .badge-error {
+    background: var(--error-bg);
+    color: var(--error-text);
+  }
+
+  /* Logs panel */
+  .logs-row td {
+    padding: 0;
+    background: var(--bg-surface);
+  }
+
+  .logs-row:hover {
+    background: none;
+  }
+
+  .logs-panel {
+    padding: 12px 14px;
+  }
+
+  .logs-panel h4 {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .logs-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .logs-table th {
+    font-size: 11px;
+    padding: 6px 10px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logs-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: top;
+  }
+
+  .logs-table tr.log-success {
+    background: color-mix(in srgb, var(--success-bg) 40%, transparent);
+  }
+
+  .logs-table tr.log-error {
+    background: color-mix(in srgb, var(--error-bg) 40%, transparent);
+  }
+
+  .log-result {
+    max-width: 400px;
+    word-break: break-word;
+    font-family: var(--mono);
+    font-size: 11px;
+    white-space: pre-wrap;
+  }
+
+  .log-result-toggle {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 11px;
+    margin-top: 2px;
+    background: none;
+    border: none;
+    font-family: var(--sans);
+    padding: 0;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+  }
+
+  .empty-state p {
+    margin-bottom: 12px;
+  }
+
+  /* Tabs */
+  .tab-bar {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-elevated);
+    padding: 0 24px;
+  }
+
+  .tab-btn {
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--sans);
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .tab-btn:hover {
+    color: var(--text);
+  }
+
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  .tab-section {
+    display: none;
+  }
+
+  .tab-section.active {
+    display: block;
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 13px;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+
+  .status-dot-green { background: var(--success); }
+  .status-dot-yellow { background: var(--warning); }
+  .status-dot-gray { background: var(--text-muted); }
+
+  .badge-running {
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+
+  .badge-timeout {
+    background: var(--warning-bg);
+    color: var(--warning);
+  }
+
+  .badge-message {
+    background: var(--accent-light);
+    color: var(--accent);
+  }
+
+  .badge-task {
+    background: var(--warning-bg);
+    color: var(--warning);
+  }
+
+  .badge-idle {
+    background: var(--muted-bg);
+    color: var(--muted-text);
+  }
+
+  .load-more-row td {
+    text-align: center;
+    padding: 12px;
+  }
+
+  .session-id {
+    font-family: var(--mono);
+    font-size: 11px;
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--overlay);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open {
+    display: flex;
+  }
+
+  .modal {
+    background: var(--bg-elevated);
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: 20px;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .modal-header h2 {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Form */
+  .form-group {
+    margin-bottom: 16px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: var(--sans);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: var(--accent);
+  }
+
+  .form-group textarea {
+    resize: vertical;
+    min-height: 72px;
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+
+  .form-group .hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Toast */
+  .toast-container {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toast {
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    border-radius: var(--radius);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    animation: toast-in 0.25s ease-out, toast-out 0.25s ease-in 2.75s forwards;
+    max-width: 360px;
+  }
+
+  .toast-success {
+    border-left: 3px solid var(--success);
+  }
+
+  .toast-error {
+    border-left: 3px solid var(--danger);
+  }
+
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes toast-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  /* Loading spinner */
+  .spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-row td {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    header {
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 12px 16px;
+    }
+
+    main {
+      padding: 16px;
+    }
+
+    .table-wrapper {
+      overflow-x: auto;
+    }
+
+    table {
+      min-width: 700px;
+    }
+
+    .modal {
+      max-width: 100%;
+      margin: 10px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>NanoClaw</h1>
+  <div class="header-actions">
+    <label class="toggle-label" id="refreshToggle">
+      <div class="toggle-switch active" id="refreshSwitch"></div>
+      Auto-refresh
+    </label>
+    <button class="btn btn-primary" id="newTaskBtn" onclick="openCreateModal()">New Task</button>
+  </div>
+</header>
+
+<nav class="tab-bar">
+  <button class="tab-btn active" data-tab="tasks">Tasks</button>
+  <button class="tab-btn" data-tab="containers">Containers</button>
+  <button class="tab-btn" data-tab="sessions">Sessions</button>
+</nav>
+
+<main>
+  <!-- Tasks Tab -->
+  <div class="tab-section active" id="tab-tasks">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Prompt</th>
+            <th>Group</th>
+            <th>Schedule</th>
+            <th>Status</th>
+            <th>Next Run</th>
+            <th>Last Run</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="taskBody">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Containers Tab -->
+  <div class="tab-section" id="tab-containers">
+    <div class="status-bar" id="queueStatus">
+      <span><span class="status-dot status-dot-gray"></span>Loading...</span>
+    </div>
+
+    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Active Containers</h3>
+    <div class="table-wrapper" style="margin-bottom: 24px;">
+      <table>
+        <thead>
+          <tr>
+            <th>Group</th>
+            <th>Container</th>
+            <th>Type</th>
+            <th>Started</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="activeContainersBody">
+        </tbody>
+      </table>
+    </div>
+
+    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Run History</h3>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Started</th>
+            <th>Group</th>
+            <th>Type</th>
+            <th>Duration</th>
+            <th>Status</th>
+            <th>Result / Error</th>
+          </tr>
+        </thead>
+        <tbody id="containerHistoryBody">
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sessions Tab -->
+  <div class="tab-section" id="tab-sessions">
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Group</th>
+            <th>Session ID</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="sessionsBody">
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- Create/Edit Modal -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">New Task</h2>
+      <button class="btn-icon" onclick="closeModal('taskModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editTaskId">
+      <div class="form-group">
+        <label for="fieldPrompt">Prompt</label>
+        <textarea id="fieldPrompt" rows="3" placeholder="What should the agent do?"></textarea>
+      </div>
+      <div class="form-group">
+        <label for="fieldGroup">Group</label>
+        <select id="fieldGroup"></select>
+      </div>
+      <div class="form-group">
+        <label for="fieldScheduleType">Schedule Type</label>
+        <select id="fieldScheduleType" onchange="updateSchedulePlaceholder()">
+          <option value="cron">cron</option>
+          <option value="interval">interval</option>
+          <option value="once">once</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="fieldScheduleValue">Schedule Value</label>
+        <input type="text" id="fieldScheduleValue" placeholder="0 9 * * *">
+        <div class="hint" id="scheduleHint">Cron expression (e.g. 0 9 * * * for daily at 9am)</div>
+      </div>
+      <div class="form-group">
+        <label for="fieldContextMode">Context Mode</label>
+        <select id="fieldContextMode">
+          <option value="isolated">isolated</option>
+          <option value="group">group</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="fieldScript">Script <span style="color: var(--text-muted); font-weight: 400;">(optional)</span></label>
+        <textarea id="fieldScript" rows="4" placeholder="Optional script content"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('taskModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTask()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width: 400px;">
+    <div class="modal-header">
+      <h2>Delete Task</h2>
+      <button class="btn-icon" onclick="closeModal('deleteModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>Delete task <code id="deleteTaskId" style="font-family: var(--mono); background: var(--muted-bg); padding: 1px 6px; border-radius: 3px;"></code>?</p>
+      <p style="color: var(--text-secondary); font-size: 13px; margin-top: 8px;">This action cannot be undone.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-danger" id="deleteConfirmBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  // ── State ────────────────────────────────────────────────────────────
+  const state = {
+    tasks: [],
+    groups: {},
+    expandedLogs: {},
+    activeContainers: [],
+    queueStatus: { activeCount: 0, maxConcurrent: 0, waitingCount: 0 },
+    containerHistory: [],
+    sessions: {},
+    activeTab: 'tasks',
+    historyLimit: 50,
+  };
+
+  let autoRefresh = true;
+  let refreshTimer = null;
+
+  // ── API helper ───────────────────────────────────────────────────────
+  async function api(method, path, body) {
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+    };
+    if (body !== undefined) opts.body = JSON.stringify(body);
+    const res = await fetch(path, opts);
+    const json = await res.json();
+    if (!res.ok) {
+      const msg = json.error || json.message || res.statusText;
+      throw new Error(msg);
+    }
+    return json;
+  }
+
+  // ── Toast ────────────────────────────────────────────────────────────
+  function toast(message, type) {
+    type = type || 'success';
+    const el = document.createElement('div');
+    el.className = 'toast toast-' + type;
+    el.textContent = message;
+    document.getElementById('toastContainer').appendChild(el);
+    setTimeout(function() { el.remove(); }, 3000);
+  }
+
+  // ── Formatting helpers ───────────────────────────────────────────────
+  function fmtDate(iso) {
+    if (!iso) return '\u2014';
+    const d = new Date(iso);
+    return d.toLocaleString(undefined, {
+      month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+    });
+  }
+
+  function fmtDuration(ms) {
+    if (ms < 1000) return ms + 'ms';
+    if (ms < 60000) return (ms / 1000).toFixed(1) + 's';
+    const mins = Math.floor(ms / 60000);
+    const secs = ((ms % 60000) / 1000).toFixed(0);
+    return mins + 'm ' + secs + 's';
+  }
+
+  function truncate(str, len) {
+    if (!str) return '';
+    return str.length > len ? str.slice(0, len) + '\u2026' : str;
+  }
+
+  function groupName(folder) {
+    for (const key of Object.keys(state.groups)) {
+      const g = state.groups[key];
+      if (g.folder === folder) return g.name || key;
+    }
+    return folder || '\u2014';
+  }
+
+  // ── Safe DOM builders ────────────────────────────────────────────────
+  function el(tag, attrs, children) {
+    const node = document.createElement(tag);
+    if (attrs) {
+      for (const k of Object.keys(attrs)) {
+        if (k === 'className') node.className = attrs[k];
+        else if (k === 'style' && typeof attrs[k] === 'object') {
+          for (const s of Object.keys(attrs[k])) node.style[s] = attrs[k][s];
+        }
+        else if (k.startsWith('on') && typeof attrs[k] === 'function') {
+          node.addEventListener(k.slice(2).toLowerCase(), attrs[k]);
+        }
+        else node.setAttribute(k, attrs[k]);
+      }
+    }
+    if (children) {
+      if (!Array.isArray(children)) children = [children];
+      for (const c of children) {
+        if (typeof c === 'string') node.appendChild(document.createTextNode(c));
+        else if (c) node.appendChild(c);
+      }
+    }
+    return node;
+  }
+
+  function textNode(t) { return document.createTextNode(t); }
+
+  // ── Render ───────────────────────────────────────────────────────────
+  function renderTasks() {
+    const tbody = document.getElementById('taskBody');
+    tbody.textContent = '';
+
+    if (state.tasks.length === 0) {
+      const td = el('td', { colspan: '7', className: 'empty-state' }, [
+        el('p', null, 'No scheduled tasks'),
+        el('button', { className: 'btn btn-primary', onClick: openCreateModal }, 'Create your first task'),
+      ]);
+      tbody.appendChild(el('tr', null, td));
+      return;
+    }
+
+    for (const t of state.tasks) {
+      const isPaused = t.status === 'paused';
+      const isExpanded = state.expandedLogs[t.id];
+
+      // Prompt cell
+      const promptTd = el('td', { className: 'cell-prompt', title: t.prompt || '' }, truncate(t.prompt, 60));
+
+      // Group cell
+      const groupTd = el('td', null, groupName(t.group_folder));
+
+      // Schedule cell
+      const schedTd = el('td', { className: 'cell-mono' }, [
+        textNode(t.schedule_type + ' '),
+        el('span', { style: { color: 'var(--text-muted)' } }, t.schedule_value),
+      ]);
+
+      // Status cell
+      const statusTd = el('td', null,
+        el('span', { className: 'badge badge-' + t.status }, t.status)
+      );
+
+      // Date cells
+      const nextTd = el('td', { className: 'cell-date' }, fmtDate(t.next_run));
+      const lastTd = el('td', { className: 'cell-date' }, fmtDate(t.last_run));
+
+      // Action buttons
+      const editBtn = el('button', {
+        className: 'btn-icon', title: 'Edit',
+        onClick: (function(id) { return function() { openEditModal(id); }; })(t.id),
+      }, '\u270E');
+
+      const pauseBtn = el('button', {
+        className: 'btn-icon', title: isPaused ? 'Resume' : 'Pause',
+        onClick: (function(id) { return function() { togglePause(id); }; })(t.id),
+      }, isPaused ? '\u25B6' : '\u23F8');
+
+      const runBtn = el('button', {
+        className: 'btn-icon', title: 'Run now',
+        onClick: (function(id) { return function() { runTaskNow(id); }; })(t.id),
+      }, '\u26A1');
+
+      const delBtn = el('button', {
+        className: 'btn-icon', title: 'Delete',
+        onClick: (function(id) { return function() { confirmDelete(id); }; })(t.id),
+      }, '\uD83D\uDDD1');
+
+      const logBtn = el('button', {
+        className: 'btn-icon', title: 'Logs',
+        onClick: (function(id) { return function() { toggleLogs(id); }; })(t.id),
+      }, '\uD83D\uDD53');
+      if (isExpanded) logBtn.style.color = 'var(--accent)';
+
+      const actionsTd = el('td', null,
+        el('div', { className: 'cell-actions' }, [editBtn, pauseBtn, runBtn, delBtn, logBtn])
+      );
+
+      tbody.appendChild(el('tr', {
+        style: { cursor: 'pointer' },
+        onClick: (function(id) { return function(e) {
+          // Don't toggle if clicking action buttons
+          if (e.target.closest('.cell-actions')) return;
+          toggleLogs(id);
+        }; })(t.id),
+      }, [promptTd, groupTd, schedTd, statusTd, nextTd, lastTd, actionsTd]));
+
+      // Expanded logs row
+      if (isExpanded) {
+        const logsPanel = el('div', { className: 'logs-panel', id: 'logs-' + t.id }, [
+          el('div', { style: { textAlign: 'center', padding: '12px' } },
+            el('span', { className: 'spinner' })
+          ),
+        ]);
+        const logsTd = el('td', { colspan: '7' }, logsPanel);
+        const logsRow = el('tr', { className: 'logs-row' }, logsTd);
+        tbody.appendChild(logsRow);
+      }
+    }
+
+    // Load expanded logs
+    for (const id of Object.keys(state.expandedLogs)) {
+      if (state.expandedLogs[id]) loadLogs(id);
+    }
+  }
+
+  // ── Data loading ─────────────────────────────────────────────────────
+  async function loadTasks() {
+    try {
+      state.tasks = await api('GET', '/api/tasks');
+      renderTasks();
+    } catch (e) {
+      console.error('Failed to load tasks:', e);
+    }
+  }
+
+  async function loadGroups() {
+    try {
+      state.groups = await api('GET', '/api/groups');
+    } catch (e) {
+      console.error('Failed to load groups:', e);
+    }
+  }
+
+  async function loadLogs(taskId) {
+    const panel = document.getElementById('logs-' + taskId);
+    if (!panel) return;
+
+    try {
+      const logs = await api('GET', '/api/tasks/' + taskId + '/logs');
+
+      panel.textContent = '';
+      panel.appendChild(el('h4', null, 'Run History'));
+
+      if (!logs || logs.length === 0) {
+        panel.appendChild(el('p', { style: { color: 'var(--text-muted)', fontSize: '13px' } }, 'No runs yet'));
+        return;
+      }
+
+      const thead = el('thead', null,
+        el('tr', null, [
+          el('th', null, 'Run At'),
+          el('th', null, 'Duration'),
+          el('th', null, 'Status'),
+          el('th', null, 'Result / Error'),
+        ])
+      );
+
+      const tbodyEl = document.createElement('tbody');
+      for (const log of logs) {
+        const cls = log.status === 'success' ? 'log-success' : 'log-error';
+        const content = log.status === 'error' ? (log.error || '') : (log.result || '');
+
+        const resultTd = el('td', { className: 'log-result' });
+        if (!content) {
+          resultTd.appendChild(el('span', { style: { color: 'var(--text-muted)' } }, '\u2014'));
+        } else if (content.length > 200) {
+          resultTd.appendChild(textNode(content.slice(0, 200)));
+          const toggle = el('button', {
+            className: 'log-result-toggle',
+            onClick: (function(fullContent, td) {
+              return function() { td.textContent = fullContent; };
+            })(content, resultTd),
+          }, ' show more');
+          resultTd.appendChild(toggle);
+        } else {
+          resultTd.textContent = content;
+        }
+
+        const row = el('tr', { className: cls }, [
+          el('td', { style: { whiteSpace: 'nowrap' } }, fmtDate(log.run_at)),
+          el('td', { style: { whiteSpace: 'nowrap', fontFamily: 'var(--mono)', fontSize: '11px' } }, fmtDuration(log.duration_ms)),
+          el('td', null, el('span', { className: 'badge badge-' + log.status }, log.status)),
+          resultTd,
+        ]);
+        tbodyEl.appendChild(row);
+      }
+
+      const table = el('table', { className: 'logs-table' }, [thead, tbodyEl]);
+      panel.appendChild(table);
+    } catch (e) {
+      panel.textContent = '';
+      panel.appendChild(el('h4', null, 'Run History'));
+      panel.appendChild(el('p', { style: { color: 'var(--error-text)', fontSize: '13px' } }, 'Failed to load logs: ' + e.message));
+    }
+  }
+
+  // ── Logs toggle ──────────────────────────────────────────────────────
+  function toggleLogs(taskId) {
+    state.expandedLogs[taskId] = !state.expandedLogs[taskId];
+    renderTasks();
+  }
+
+  // ── Tab switching ────────────────────────────────────────────────────
+  function switchTab(tab) {
+    state.activeTab = tab;
+    var btns = document.querySelectorAll('.tab-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('active', btns[i].getAttribute('data-tab') === tab);
+    }
+    var sections = document.querySelectorAll('.tab-section');
+    for (var j = 0; j < sections.length; j++) {
+      sections[j].classList.toggle('active', sections[j].id === 'tab-' + tab);
+    }
+    document.getElementById('newTaskBtn').style.display = tab === 'tasks' ? '' : 'none';
+    refreshActiveTab();
+  }
+
+  var tabBtns = document.querySelectorAll('.tab-btn');
+  for (var i = 0; i < tabBtns.length; i++) {
+    tabBtns[i].addEventListener('click', function() {
+      switchTab(this.getAttribute('data-tab'));
+    });
+  }
+
+  // ── Relative time helper ────────────────────────────────────────────
+  function fmtElapsed(startTimestamp) {
+    var secs = Math.floor((Date.now() - startTimestamp) / 1000);
+    if (secs < 60) return secs + 's ago';
+    if (secs < 3600) return Math.floor(secs / 60) + 'm ' + (secs % 60) + 's ago';
+    var hrs = Math.floor(secs / 3600);
+    var mins = Math.floor((secs % 3600) / 60);
+    return hrs + 'h ' + mins + 'm ago';
+  }
+
+  // ── Containers: data loading ────────────────────────────────────────
+  async function loadActiveContainers() {
+    try {
+      state.activeContainers = await api('GET', '/api/containers/active');
+      state.queueStatus = await api('GET', '/api/containers/status');
+      renderActiveContainers();
+      renderQueueStatus();
+    } catch (e) {
+      console.error('Failed to load active containers:', e);
+    }
+  }
+
+  async function loadContainerHistory() {
+    try {
+      state.containerHistory = await api('GET', '/api/containers/history?limit=' + state.historyLimit);
+      renderContainerHistory();
+    } catch (e) {
+      console.error('Failed to load container history:', e);
+    }
+  }
+
+  // ── Containers: rendering ───────────────────────────────────────────
+  function renderQueueStatus() {
+    var bar = document.getElementById('queueStatus');
+    bar.textContent = '';
+
+    var s = state.queueStatus;
+    var dotClass = s.activeCount > 0 ? 'status-dot-green' : 'status-dot-gray';
+    if (s.waitingCount > 0) dotClass = 'status-dot-yellow';
+
+    bar.appendChild(el('span', null, [
+      el('span', { className: 'status-dot ' + dotClass }),
+      textNode(s.activeCount + '/' + s.maxConcurrent + ' containers active'),
+    ]));
+    if (s.waitingCount > 0) {
+      bar.appendChild(el('span', { style: { color: 'var(--warning)' } },
+        s.waitingCount + ' queued'));
+    }
+  }
+
+  function renderActiveContainers() {
+    var tbody = document.getElementById('activeContainersBody');
+    tbody.textContent = '';
+
+    if (state.activeContainers.length === 0) {
+      var td = el('td', { colspan: '6', className: 'empty-state' },
+        el('p', null, 'No active containers'));
+      tbody.appendChild(el('tr', null, td));
+      return;
+    }
+
+    for (var i = 0; i < state.activeContainers.length; i++) {
+      var c = state.activeContainers[i];
+
+      var groupTd = el('td', null, groupName(c.groupFolder));
+      var nameTd = el('td', { className: 'cell-mono' }, truncate(c.containerName || '', 40));
+      var typeTd = el('td', null,
+        el('span', { className: 'badge badge-' + c.runType }, c.runType));
+      var startedTd = el('td', { className: 'cell-date' }, fmtElapsed(c.startedAt));
+      var statusTd = el('td', null,
+        el('span', { className: 'badge ' + (c.idleWaiting ? 'badge-idle' : 'badge-active') },
+          c.idleWaiting ? 'idle' : 'active'));
+
+      var stopBtn = el('button', {
+        className: 'btn btn-sm btn-danger',
+        onClick: (function(jid) { return function() { stopContainer(jid); }; })(c.groupJid),
+      }, 'Stop');
+      var actionsTd = el('td', null, stopBtn);
+
+      tbody.appendChild(el('tr', null, [groupTd, nameTd, typeTd, startedTd, statusTd, actionsTd]));
+    }
+  }
+
+  function renderContainerHistory() {
+    var tbody = document.getElementById('containerHistoryBody');
+    tbody.textContent = '';
+
+    if (state.containerHistory.length === 0) {
+      var td = el('td', { colspan: '6', className: 'empty-state' },
+        el('p', null, 'No container runs recorded yet'));
+      tbody.appendChild(el('tr', null, td));
+      return;
+    }
+
+    for (var i = 0; i < state.containerHistory.length; i++) {
+      var r = state.containerHistory[i];
+      var isExpanded = state.expandedRuns && state.expandedRuns[r.id];
+
+      var startedTd = el('td', { className: 'cell-date' }, fmtDate(r.started_at));
+      var groupTd = el('td', null, r.group_name || r.group_folder);
+      var typeTd = el('td', null,
+        el('span', { className: 'badge badge-' + r.run_type }, r.run_type));
+      var durTd = el('td', { className: 'cell-mono' },
+        r.duration_ms != null ? fmtDuration(r.duration_ms) : '\u2014');
+
+      var statusClass = 'badge-' + r.status;
+      var statusTd = el('td', null,
+        el('span', { className: 'badge ' + statusClass }, r.status));
+
+      var content = r.status === 'error' ? (r.error || '') : (r.result || '');
+      var resultTd = el('td', { className: 'log-result' });
+      if (!content) {
+        resultTd.appendChild(el('span', { style: { color: 'var(--text-muted)' } }, '\u2014'));
+      } else {
+        resultTd.textContent = truncate(content, 120);
+      }
+
+      var cls = r.status === 'success' ? 'log-success' : (r.status === 'error' ? 'log-error' : '');
+      var row = el('tr', {
+        className: cls,
+        style: { cursor: 'pointer' },
+        onClick: (function(id) { return function() { toggleRunDetails(id); }; })(r.id),
+      }, [startedTd, groupTd, typeTd, durTd, statusTd, resultTd]);
+      tbody.appendChild(row);
+
+      // Expanded details row
+      if (isExpanded) {
+        var details = [];
+
+        details.push(detailRow('Container', r.container_name));
+        details.push(detailRow('Chat JID', r.chat_jid || '\u2014'));
+        details.push(detailRow('Session', r.session_id ? truncate(r.session_id, 60) : 'new session'));
+        details.push(detailRow('Prompt Length', r.prompt_length != null ? r.prompt_length.toLocaleString() + ' chars' : '\u2014'));
+        details.push(detailRow('Timed Out', r.timed_out ? 'Yes' : 'No'));
+        details.push(detailRow('Had Output', r.had_output ? 'Yes' : 'No'));
+        details.push(detailRow('Exit Code', r.exit_code != null ? String(r.exit_code) : '\u2014'));
+        if (r.task_id) details.push(detailRow('Task ID', r.task_id));
+        if (r.started_at && r.ended_at) {
+          details.push(detailRow('Started', new Date(r.started_at).toLocaleString()));
+          details.push(detailRow('Ended', new Date(r.ended_at).toLocaleString()));
+        }
+
+        var detailsPanel = el('div', { className: 'logs-panel' }, [
+          el('h4', null, 'Run Details'),
+          el('table', { className: 'logs-table' }, [
+            el('tbody', null, details),
+          ]),
+        ]);
+        var detailsTd = el('td', { colspan: '6' }, detailsPanel);
+        tbody.appendChild(el('tr', { className: 'logs-row' }, detailsTd));
+      }
+    }
+
+    // Load more button
+    if (state.containerHistory.length >= state.historyLimit) {
+      var loadMoreTd = el('td', { colspan: '6' });
+      loadMoreTd.style.textAlign = 'center';
+      loadMoreTd.style.padding = '12px';
+      loadMoreTd.appendChild(el('button', { className: 'btn btn-sm', onClick: function() {
+        state.historyLimit += 50;
+        loadContainerHistory();
+      } }, 'Load more'));
+      tbody.appendChild(el('tr', null, loadMoreTd));
+    }
+  }
+
+  function detailRow(label, value) {
+    return el('tr', null, [
+      el('td', { style: { fontWeight: '600', color: 'var(--text-secondary)', whiteSpace: 'nowrap', width: '140px' } }, label),
+      el('td', { className: 'cell-mono' }, value || ''),
+    ]);
+  }
+
+  function toggleRunDetails(runId) {
+    if (!state.expandedRuns) state.expandedRuns = {};
+    state.expandedRuns[runId] = !state.expandedRuns[runId];
+    renderContainerHistory();
+  }
+
+  async function stopContainer(groupJid) {
+    try {
+      await api('POST', '/api/containers/' + encodeURIComponent(groupJid) + '/stop');
+      toast('Container stop requested');
+      await loadActiveContainers();
+    } catch (e) {
+      toast('Error: ' + e.message, 'error');
+    }
+  }
+
+  // ── Sessions: data loading ──────────────────────────────────────────
+  async function loadSessions() {
+    try {
+      state.sessions = await api('GET', '/api/sessions');
+      renderSessions();
+    } catch (e) {
+      console.error('Failed to load sessions:', e);
+    }
+  }
+
+  function renderSessions() {
+    var tbody = document.getElementById('sessionsBody');
+    tbody.textContent = '';
+
+    var folders = Object.keys(state.sessions);
+    if (folders.length === 0) {
+      var td = el('td', { colspan: '3', className: 'empty-state' },
+        el('p', null, 'No active sessions'));
+      tbody.appendChild(el('tr', null, td));
+      return;
+    }
+
+    for (var i = 0; i < folders.length; i++) {
+      var folder = folders[i];
+      var sessionId = state.sessions[folder];
+
+      var groupTd = el('td', null, groupName(folder));
+      var sessionTd = el('td', { className: 'session-id', title: sessionId }, sessionId);
+
+      var clearBtn = el('button', {
+        className: 'btn btn-sm btn-danger',
+        onClick: (function(gf) { return function() { clearSession(gf); }; })(folder),
+      }, 'Clear');
+      var actionsTd = el('td', null, clearBtn);
+
+      tbody.appendChild(el('tr', null, [groupTd, sessionTd, actionsTd]));
+    }
+  }
+
+  async function clearSession(groupFolder) {
+    try {
+      await api('DELETE', '/api/sessions/' + encodeURIComponent(groupFolder));
+      toast('Session cleared');
+      await loadSessions();
+    } catch (e) {
+      toast('Error: ' + e.message, 'error');
+    }
+  }
+
+  // ── Refresh active tab ──────────────────────────────────────────────
+  async function refreshActiveTab() {
+    if (state.activeTab === 'tasks') {
+      await loadTasks();
+    } else if (state.activeTab === 'containers') {
+      await loadActiveContainers();
+      await loadContainerHistory();
+    } else if (state.activeTab === 'sessions') {
+      await loadSessions();
+    }
+  }
+
+  // ── Modal helpers ────────────────────────────────────────────────────
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+  }
+
+  function populateGroupDropdown() {
+    const sel = document.getElementById('fieldGroup');
+    sel.textContent = '';
+    for (const key of Object.keys(state.groups)) {
+      const g = state.groups[key];
+      const opt = document.createElement('option');
+      opt.value = key;
+      opt.textContent = g.name || g.folder;
+      sel.appendChild(opt);
+    }
+  }
+
+  function updateSchedulePlaceholder() {
+    const type = document.getElementById('fieldScheduleType').value;
+    const input = document.getElementById('fieldScheduleValue');
+    const hint = document.getElementById('scheduleHint');
+
+    var map = {
+      cron: { placeholder: '0 9 * * *', hint: 'Cron expression (e.g. 0 9 * * * for daily at 9am)' },
+      interval: { placeholder: '300000', hint: 'Interval in milliseconds (e.g. 300000 for 5 minutes)' },
+      once: { placeholder: '2026-04-05T09:00:00', hint: 'ISO datetime for one-time execution' },
+    };
+
+    input.placeholder = map[type].placeholder;
+    hint.textContent = map[type].hint;
+  }
+
+  // ── Create / Edit ────────────────────────────────────────────────────
+  function openCreateModal() {
+    document.getElementById('modalTitle').textContent = 'New Task';
+    document.getElementById('editTaskId').value = '';
+    document.getElementById('fieldPrompt').value = '';
+    document.getElementById('fieldScheduleType').value = 'cron';
+    document.getElementById('fieldScheduleValue').value = '';
+    document.getElementById('fieldContextMode').value = 'isolated';
+    document.getElementById('fieldScript').value = '';
+    updateSchedulePlaceholder();
+    populateGroupDropdown();
+    openModal('taskModal');
+  }
+
+  function openEditModal(taskId) {
+    const task = state.tasks.find(function(t) { return t.id === taskId; });
+    if (!task) return;
+
+    document.getElementById('modalTitle').textContent = 'Edit Task';
+    document.getElementById('editTaskId').value = task.id;
+    document.getElementById('fieldPrompt').value = task.prompt || '';
+    document.getElementById('fieldScheduleType').value = task.schedule_type;
+    document.getElementById('fieldScheduleValue').value = task.schedule_value;
+    document.getElementById('fieldContextMode').value = task.context_mode;
+    document.getElementById('fieldScript').value = task.script || '';
+    updateSchedulePlaceholder();
+    populateGroupDropdown();
+    document.getElementById('fieldGroup').value = task.chat_jid;
+    openModal('taskModal');
+  }
+
+  async function saveTask() {
+    const id = document.getElementById('editTaskId').value;
+    const body = {
+      prompt: document.getElementById('fieldPrompt').value,
+      chat_jid: document.getElementById('fieldGroup').value,
+      schedule_type: document.getElementById('fieldScheduleType').value,
+      schedule_value: document.getElementById('fieldScheduleValue').value,
+      context_mode: document.getElementById('fieldContextMode').value,
+      script: document.getElementById('fieldScript').value || null,
+    };
+
+    try {
+      if (id) {
+        await api('PUT', '/api/tasks/' + id, body);
+        toast('Task updated');
+      } else {
+        await api('POST', '/api/tasks', body);
+        toast('Task created');
+      }
+      closeModal('taskModal');
+      await loadTasks();
+    } catch (e) {
+      toast('Error: ' + e.message, 'error');
+    }
+  }
+
+  // ── Delete ───────────────────────────────────────────────────────────
+  function confirmDelete(taskId) {
+    document.getElementById('deleteTaskId').textContent = taskId;
+    var btn = document.getElementById('deleteConfirmBtn');
+    // Clone to remove old listeners
+    var newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    newBtn.addEventListener('click', async function() {
+      try {
+        await api('DELETE', '/api/tasks/' + taskId);
+        toast('Task deleted');
+        closeModal('deleteModal');
+        delete state.expandedLogs[taskId];
+        await loadTasks();
+      } catch (e) {
+        toast('Error: ' + e.message, 'error');
+      }
+    });
+    openModal('deleteModal');
+  }
+
+  // ── Pause / Resume ──────────────────────────────────────────────────
+  async function togglePause(taskId) {
+    var task = state.tasks.find(function(t) { return t.id === taskId; });
+    if (!task) return;
+
+    var action = task.status === 'paused' ? 'resume' : 'pause';
+    try {
+      await api('POST', '/api/tasks/' + taskId + '/' + action);
+      toast('Task ' + action + 'd');
+      await loadTasks();
+    } catch (e) {
+      toast('Error: ' + e.message, 'error');
+    }
+  }
+
+  // ── Auto-refresh toggle ─────────────────────────────────────────────
+  async function runTaskNow(taskId) {
+    try {
+      await api('POST', '/api/tasks/' + taskId + '/run');
+      toast('Task queued for execution');
+    } catch (e) {
+      toast('Error: ' + e.message, 'error');
+    }
+  }
+
+  function startAutoRefresh() {
+    stopAutoRefresh();
+    refreshTimer = setInterval(refreshActiveTab, 10000);
+  }
+
+  function stopAutoRefresh() {
+    if (refreshTimer) {
+      clearInterval(refreshTimer);
+      refreshTimer = null;
+    }
+  }
+
+  document.getElementById('refreshToggle').addEventListener('click', function() {
+    autoRefresh = !autoRefresh;
+    var sw = document.getElementById('refreshSwitch');
+    if (autoRefresh) {
+      sw.classList.add('active');
+      startAutoRefresh();
+    } else {
+      sw.classList.remove('active');
+      stopAutoRefresh();
+    }
+  });
+
+  // ── Close modals on overlay click ────────────────────────────────────
+  var overlays = document.querySelectorAll('.modal-overlay');
+  for (var i = 0; i < overlays.length; i++) {
+    overlays[i].addEventListener('click', function(e) {
+      if (e.target === this) this.classList.remove('open');
+    });
+  }
+
+  // ── Close modals on Escape ───────────────────────────────────────────
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      var openModals = document.querySelectorAll('.modal-overlay.open');
+      for (var j = 0; j < openModals.length; j++) {
+        openModals[j].classList.remove('open');
+      }
+    }
+  });
+
+  // ── Show initial loading state ───────────────────────────────────────
+  (function() {
+    var tbody = document.getElementById('taskBody');
+    var td = document.createElement('td');
+    td.setAttribute('colspan', '7');
+    td.className = 'loading-row';
+    var sp = document.createElement('span');
+    sp.className = 'spinner';
+    td.appendChild(sp);
+    var tr = document.createElement('tr');
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  })();
+
+  // ── Init ─────────────────────────────────────────────────────────────
+  async function init() {
+    await loadGroups();
+    await refreshActiveTab();
+    startAutoRefresh();
+  }
+
+  init();
+</script>
+
+</body>
+</html>

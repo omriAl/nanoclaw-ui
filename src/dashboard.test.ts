@@ -691,6 +691,183 @@ describe('dashboard API', () => {
     });
   });
 
+  // ── Memory visualization ─────────────────────────────────────────────
+
+  describe('GET /api/memory', () => {
+    it('returns empty array when deps not provided', async () => {
+      const deps = makeDeps();
+      const { status, data } = await callApi(deps, 'GET', '/api/memory');
+      expect(status).toBe(200);
+      expect(data).toEqual([]);
+    });
+
+    it('returns summary from deps', async () => {
+      const summary = [
+        {
+          groupFolder: 'test_group',
+          groupName: 'Test Group',
+          hasGlobal: true,
+          hasGroup: true,
+          autoMemoryCount: 2,
+          additionalMountCount: 0,
+        },
+      ];
+      const deps = makeDeps({ getMemorySummary: async () => summary });
+      const { status, data } = await callApi(deps, 'GET', '/api/memory');
+      expect(status).toBe(200);
+      expect((data as any[]).length).toBe(1);
+      expect((data as any[])[0].groupFolder).toBe('test_group');
+    });
+  });
+
+  describe('GET /api/memory/:groupFolder', () => {
+    it('returns 501 when deps not provided', async () => {
+      const deps = makeDeps();
+      const { status } = await callApi(
+        deps,
+        'GET',
+        '/api/memory/test_group',
+      );
+      expect(status).toBe(501);
+    });
+
+    it('returns 404 for unknown group', async () => {
+      const deps = makeDeps({
+        getMemoryLayers: async () => null,
+      });
+      const { status } = await callApi(
+        deps,
+        'GET',
+        '/api/memory/nonexistent',
+      );
+      expect(status).toBe(404);
+    });
+
+    it('returns memory layers for valid group', async () => {
+      const layers = {
+        groupFolder: 'test_group',
+        groupName: 'Test Group',
+        global: '# Global instructions',
+        group: '# Group instructions',
+        autoMemory: [
+          {
+            filename: 'MEMORY.md',
+            content: '# Memory index',
+          },
+        ],
+        additionalMounts: [],
+      };
+      const deps = makeDeps({
+        getMemoryLayers: async (gf) =>
+          gf === 'test_group' ? layers : null,
+      });
+      const { status, data } = await callApi(
+        deps,
+        'GET',
+        '/api/memory/test_group',
+      );
+      expect(status).toBe(200);
+      expect((data as any).global).toBe('# Global instructions');
+      expect((data as any).autoMemory.length).toBe(1);
+    });
+
+    it('returns 405 for non-GET methods', async () => {
+      const deps = makeDeps({
+        getMemoryLayers: async () => null,
+      });
+      const { status } = await callApi(
+        deps,
+        'POST',
+        '/api/memory/test_group',
+      );
+      expect(status).toBe(405);
+    });
+  });
+
+  // ── Service control ─────────────────────────────────────────────────
+
+  describe('GET /api/service/status', () => {
+    it('returns unknown when deps not provided', async () => {
+      const deps = makeDeps();
+      const { status, data } = await callApi(
+        deps,
+        'GET',
+        '/api/service/status',
+      );
+      expect(status).toBe(200);
+      expect((data as any).status).toBe('unknown');
+      expect((data as any).platform).toBe('unknown');
+    });
+
+    it('returns status from deps', async () => {
+      const deps = makeDeps({
+        getServiceStatus: async () => ({
+          status: 'running' as const,
+          platform: 'darwin' as const,
+          uptime: 12345,
+        }),
+      });
+      const { status, data } = await callApi(
+        deps,
+        'GET',
+        '/api/service/status',
+      );
+      expect(status).toBe(200);
+      expect((data as any).status).toBe('running');
+      expect((data as any).platform).toBe('darwin');
+    });
+  });
+
+  describe('POST /api/service/restart', () => {
+    it('returns restarting when deps provided', async () => {
+      const deps = makeDeps({
+        restartService: async () => {},
+      });
+      const { status, data } = await callApi(
+        deps,
+        'POST',
+        '/api/service/restart',
+      );
+      expect(status).toBe(200);
+      expect((data as any).restarting).toBe(true);
+    });
+
+    it('returns 501 when deps not provided', async () => {
+      const deps = makeDeps();
+      const { status } = await callApi(
+        deps,
+        'POST',
+        '/api/service/restart',
+      );
+      expect(status).toBe(501);
+    });
+  });
+
+  describe('POST /api/service/stop', () => {
+    it('returns stopping when deps provided', async () => {
+      const deps = makeDeps({
+        stopService: async () => {},
+      });
+      const { status, data } = await callApi(
+        deps,
+        'POST',
+        '/api/service/stop',
+      );
+      expect(status).toBe(200);
+      expect((data as any).stopping).toBe(true);
+    });
+
+    it('returns 501 when deps not provided', async () => {
+      const deps = makeDeps();
+      const { status } = await callApi(
+        deps,
+        'POST',
+        '/api/service/stop',
+      );
+      expect(status).toBe(501);
+    });
+  });
+
   describe('error handling', () => {
     it('returns 404 for unknown routes', async () => {
       const deps = makeDeps();

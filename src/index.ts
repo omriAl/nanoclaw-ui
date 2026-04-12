@@ -3,9 +3,13 @@ import path from 'path';
 
 import { OneCLI } from '@onecli-sh/sdk';
 
+import { execFile, spawn } from 'child_process';
+import { promisify } from 'util';
+
 import {
   ASSISTANT_NAME,
   DASHBOARD_ENABLED,
+  DATA_DIR,
   DEFAULT_TRIGGER,
   getTriggerPattern,
   GROUPS_DIR,
@@ -77,7 +81,15 @@ import {
   enqueueManualRun,
   startSchedulerLoop,
 } from './task-scheduler.js';
-import { Channel, NewMessage, RegisteredGroup } from './types.js';
+import {
+  Channel,
+  GroupMemoryLayers,
+  MemoryFile,
+  MemorySummary,
+  NewMessage,
+  RegisteredGroup,
+  ServiceStatus,
+} from './types.js';
 import { logger } from './logger.js';
 
 // Re-export for backwards compatibility during refactor
@@ -618,6 +630,255 @@ function ensureContainerSystemRunning(): void {
   cleanupOrphans();
 }
 
+// --- Memory visualization helpers ---
+
+const MAX_FILE_SIZE = 100 * 1024; // 100KB cap per file
+
+function readFileCapped(filePath: string): string | null {
+  try {
+    const stat = fs.statSync(filePath);
+    if (stat.size > MAX_FILE_SIZE) {
+      const buf = Buffer.alloc(MAX_FILE_SIZE);
+      const fd = fs.openSync(filePath, 'r');
+      fs.readSync(fd, buf, 0, MAX_FILE_SIZE, 0);
+      fs.closeSync(fd);
+      return buf.toString('utf-8') + '\n\n[truncated — file exceeds 100KB]';
+    }
+    return fs.readFileSync(filePath, 'utf-8');
+  } catch {
+    return null;
+  }
+}
+
+function parseFrontmatter(
+  content: string,
+): { frontmatter: Record<string, string>; body: string } {
+  const match = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (!match) return { frontmatter: {}, body: content };
+  const fm: Record<string, string> = {};
+  for (const line of match[1].split('\n')) {
+    const idx = line.indexOf(':');
+    if (idx > 0) {
+      fm[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+    }
+  }
+  return { frontmatter: fm, body: match[2] };
+}
+
+function findGroupByFolder(
+  folder: string,
+): { jid: string; group: RegisteredGroup } | null {
+  const groups = getAllRegisteredGroups();
+  for (const [jid, g] of Object.entries(groups)) {
+    if (g.folder === folder) return { jid, group: g };
+  }
+  return null;
+}
+
+async function getMemorySummary(): Promise<MemorySummary[]> {
+  const groups = getAllRegisteredGroups();
+  const globalMdPath = path.join(GROUPS_DIR, 'global', 'CLAUDE.md');
+  const hasGlobal = fs.existsSync(globalMdPath);
+
+  const result: MemorySummary[] = [];
+  for (const [, g] of Object.entries(groups)) {
+    const groupMdPath = path.join(GROUPS_DIR, g.folder, 'CLAUDE.md');
+    const memoryDir = path.join(
+      DATA_DIR,
+      'sessions',
+      g.folder,
+      '.claude',
+      'projects',
+      '-workspace-group',
+      'memory',
+    );
+
+    let autoMemoryCount = 0;
+    try {
+      const files = fs.readdirSync(memoryDir);
+      autoMemoryCount = files.filter(
+        (f) => f.endsWith('.md') && f !== 'MEMORY.md',
+      ).length;
+    } catch {
+      // directory doesn't exist
+    }
+
+    result.push({
+      groupFolder: g.folder,
+      groupName: g.name,
+      hasGlobal: !g.isMain && hasGlobal,
+      hasGroup: fs.existsSync(groupMdPath),
+      autoMemoryCount,
+      additionalMountCount: g.containerConfig?.additionalMounts?.length ?? 0,
+    });
+  }
+  return result;
+}
+
+async function getMemoryLayers(
+  groupFolder: string,
+): Promise<GroupMemoryLayers | null> {
+  const entry = findGroupByFolder(groupFolder);
+  if (!entry) return null;
+  const g = entry.group;
+
+  // Layer 1: Global
+  const globalContent = g.isMain
+    ? null
+    : readFileCapped(path.join(GROUPS_DIR, 'global', 'CLAUDE.md'));
+
+  // Layer 2: Group
+  const groupContent = readFileCapped(
+    path.join(GROUPS_DIR, g.folder, 'CLAUDE.md'),
+  );
+
+  // Layer 3: Auto-memory
+  const memoryDir = path.join(
+    DATA_DIR,
+    'sessions',
+    g.folder,
+    '.claude',
+    'projects',
+    '-workspace-group',
+    'memory',
+  );
+  const autoMemory: MemoryFile[] = [];
+  try {
+    const files = fs.readdirSync(memoryDir);
+    for (const file of files) {
+      if (path.basename(file) !== file) continue; // reject path components
+      if (!file.endsWith('.md')) continue;
+      const resolved = path.resolve(memoryDir, file);
+      if (!resolved.startsWith(memoryDir)) continue; // reject symlink escapes
+      const content = readFileCapped(resolved);
+      if (content === null) continue;
+      const { frontmatter, body } = parseFrontmatter(content);
+      autoMemory.push({
+        filename: file,
+        content: file === 'MEMORY.md' ? content : body,
+        frontmatter:
+          Object.keys(frontmatter).length > 0 ? frontmatter : undefined,
+      });
+    }
+  } catch {
+    // directory doesn't exist
+  }
+
+  // Sort: MEMORY.md first, then alphabetical
+  autoMemory.sort((a, b) => {
+    if (a.filename === 'MEMORY.md') return -1;
+    if (b.filename === 'MEMORY.md') return 1;
+    return a.filename.localeCompare(b.filename);
+  });
+
+  // Additional mounts
+  const additionalMounts: GroupMemoryLayers['additionalMounts'] = [];
+  if (g.containerConfig?.additionalMounts) {
+    for (const mount of g.containerConfig.additionalMounts) {
+      const mountPath = mount.hostPath.replace(/^~/, process.env.HOME || '');
+      const claudeMd = readFileCapped(path.join(mountPath, 'CLAUDE.md'));
+      const name =
+        mount.containerPath || path.basename(mountPath);
+      additionalMounts.push({ name, claudeMd });
+    }
+  }
+
+  return {
+    groupFolder: g.folder,
+    groupName: g.name,
+    global: globalContent,
+    group: groupContent,
+    autoMemory,
+    additionalMounts,
+  };
+}
+
+// --- Service control helpers ---
+
+const execFileAsync = promisify(execFile);
+const processStartTime = Date.now();
+
+function getServicePlatform(): 'darwin' | 'linux' | 'unknown' {
+  if (process.platform === 'darwin') return 'darwin';
+  if (process.platform === 'linux') return 'linux';
+  return 'unknown';
+}
+
+async function getServiceStatus(): Promise<ServiceStatus> {
+  const platform = getServicePlatform();
+  const uptime = Date.now() - processStartTime;
+
+  if (platform === 'darwin') {
+    try {
+      const uid = process.getuid?.() ?? 501;
+      await execFileAsync('launchctl', [
+        'print',
+        `gui/${uid}/com.nanoclaw`,
+      ]);
+      return { status: 'running', platform, uptime };
+    } catch {
+      return { status: 'stopped', platform };
+    }
+  }
+
+  if (platform === 'linux') {
+    try {
+      const { stdout } = await execFileAsync('systemctl', [
+        '--user',
+        'is-active',
+        'nanoclaw',
+      ]);
+      return {
+        status: stdout.trim() === 'active' ? 'running' : 'stopped',
+        platform,
+        uptime: stdout.trim() === 'active' ? uptime : undefined,
+      };
+    } catch {
+      return { status: 'stopped', platform };
+    }
+  }
+
+  return { status: 'unknown', platform };
+}
+
+async function restartService(): Promise<void> {
+  const platform = getServicePlatform();
+  if (platform === 'darwin') {
+    const uid = process.getuid?.() ?? 501;
+    const child = spawn(
+      'launchctl',
+      ['kickstart', '-k', `gui/${uid}/com.nanoclaw`],
+      { detached: true, stdio: 'ignore' },
+    );
+    child.unref();
+  } else if (platform === 'linux') {
+    const child = spawn('systemctl', ['--user', 'restart', 'nanoclaw'], {
+      detached: true,
+      stdio: 'ignore',
+    });
+    child.unref();
+  }
+}
+
+async function stopService(): Promise<void> {
+  const platform = getServicePlatform();
+  if (platform === 'darwin') {
+    const uid = process.getuid?.() ?? 501;
+    const child = spawn(
+      'launchctl',
+      ['bootout', `gui/${uid}/com.nanoclaw`],
+      { detached: true, stdio: 'ignore' },
+    );
+    child.unref();
+  } else if (platform === 'linux') {
+    const child = spawn('systemctl', ['--user', 'stop', 'nanoclaw'], {
+      detached: true,
+      stdio: 'ignore',
+    });
+    child.unref();
+  }
+}
+
 async function main(): Promise<void> {
   ensureContainerSystemRunning();
   initDatabase();
@@ -825,6 +1086,11 @@ async function main(): Promise<void> {
         deleteSession(gf);
         delete sessions[gf];
       },
+      getMemorySummary,
+      getMemoryLayers,
+      getServiceStatus,
+      restartService,
+      stopService,
     });
   }
   queue.setProcessMessagesFn(processGroupMessages);

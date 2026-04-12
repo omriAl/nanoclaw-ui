@@ -113,6 +113,48 @@ export interface ActiveContainer {
   idleWaiting: boolean;
 }
 
+// --- Memory visualization ---
+
+export interface MemoryFile {
+  filename: string;
+  content: string;
+  frontmatter?: {
+    name?: string;
+    description?: string;
+    type?: string; // user, feedback, project, reference
+    [key: string]: unknown;
+  };
+}
+
+export interface GroupMemoryLayers {
+  groupFolder: string;
+  groupName: string;
+  global: string | null;
+  group: string | null;
+  autoMemory: MemoryFile[];
+  additionalMounts: Array<{
+    name: string;
+    claudeMd: string | null;
+  }>;
+}
+
+export interface MemorySummary {
+  groupFolder: string;
+  groupName: string;
+  hasGlobal: boolean;
+  hasGroup: boolean;
+  autoMemoryCount: number;
+  additionalMountCount: number;
+}
+
+// --- Service control ---
+
+export interface ServiceStatus {
+  status: 'running' | 'stopped' | 'unknown';
+  platform: 'darwin' | 'linux' | 'unknown';
+  uptime?: number;
+}
+
 // --- Channel abstraction ---
 
 export interface Channel {

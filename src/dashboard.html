@@ -495,6 +495,190 @@
     padding: 12px;
   }
 
+  /* Service controls */
+  .service-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .service-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  /* Memory panels */
+  .memory-group-select {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .memory-group-select select {
+    padding: 8px 12px;
+    font-size: 13px;
+    font-family: var(--sans);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    min-width: 240px;
+  }
+
+  .memory-group-select select:focus {
+    border-color: var(--accent);
+  }
+
+  .memory-panel {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .memory-layer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--bg-surface);
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+
+  .memory-layer-header:hover {
+    background: var(--bg-hover);
+  }
+
+  .memory-layer-header h4 {
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .memory-layer-header .chevron {
+    font-size: 11px;
+    color: var(--text-muted);
+    transition: transform 0.2s;
+  }
+
+  .memory-layer-header.expanded .chevron {
+    transform: rotate(90deg);
+  }
+
+  .memory-layer-body {
+    display: none;
+    padding: 14px;
+  }
+
+  .memory-layer-body.open {
+    display: block;
+  }
+
+  .memory-content {
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: var(--bg);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .memory-empty {
+    color: var(--text-muted);
+    font-size: 13px;
+    font-style: italic;
+    padding: 8px 0;
+  }
+
+  .memory-type-badge {
+    display: inline-block;
+    padding: 1px 7px;
+    font-size: 10px;
+    font-weight: 600;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .memory-type-user { background: var(--accent-light); color: var(--accent); }
+  .memory-type-feedback { background: var(--warning-bg); color: var(--warning); }
+  .memory-type-project { background: var(--success-bg); color: var(--success); }
+  .memory-type-reference { background: var(--muted-bg); color: var(--muted-text); }
+
+  .memory-file-row {
+    cursor: pointer;
+  }
+
+  .memory-file-row:hover {
+    background: var(--bg-hover);
+  }
+
+  .memory-file-content {
+    padding: 0;
+    background: var(--bg-surface);
+  }
+
+  .memory-file-content pre {
+    margin: 0;
+    padding: 12px 14px;
+    font-family: var(--mono);
+    font-size: 11px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  /* Reconnect overlay */
+  .reconnect-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--overlay);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+
+  .reconnect-overlay.open {
+    display: flex;
+  }
+
+  .reconnect-overlay .spinner {
+    width: 32px;
+    height: 32px;
+    border-width: 3px;
+    margin-bottom: 16px;
+  }
+
+  .reconnect-text {
+    font-size: 16px;
+    font-weight: 500;
+    color: white;
+  }
+
+  .reconnect-sub {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    margin-top: 8px;
+  }
+
   .session-id {
     font-family: var(--mono);
     font-size: 11px;
@@ -696,6 +880,14 @@
 <header>
   <h1>NanoClaw</h1>
   <div class="header-actions">
+    <div class="service-controls" id="serviceControls">
+      <span class="service-status">
+        <span class="status-dot status-dot-gray" id="serviceDot"></span>
+        <span id="serviceStatusText">Checking...</span>
+      </span>
+      <button class="btn btn-sm" id="restartBtn" onclick="restartService()">Restart</button>
+      <button class="btn btn-sm btn-danger" id="stopBtn" onclick="confirmStopService()">Stop</button>
+    </div>
     <label class="toggle-label" id="refreshToggle">
       <div class="toggle-switch active" id="refreshSwitch"></div>
       Auto-refresh
@@ -708,6 +900,7 @@
   <button class="tab-btn active" data-tab="tasks">Tasks</button>
   <button class="tab-btn" data-tab="containers">Containers</button>
   <button class="tab-btn" data-tab="sessions">Sessions</button>
+  <button class="tab-btn" data-tab="memory">Memory</button>
 </nav>
 
 <main>
@@ -791,6 +984,15 @@
       </table>
     </div>
   </div>
+
+  <!-- Memory Tab -->
+  <div class="tab-section" id="tab-memory">
+    <div class="memory-group-select">
+      <label style="font-size: 13px; font-weight: 500; color: var(--text-secondary);">Group</label>
+      <select id="memoryGroupSelect" onchange="onMemoryGroupChange()"></select>
+    </div>
+    <div id="memoryContent"></div>
+  </div>
 </main>
 
 <!-- Create/Edit Modal -->
@@ -860,6 +1062,31 @@
   </div>
 </div>
 
+<!-- Stop Confirmation Modal -->
+<div class="modal-overlay" id="stopModal">
+  <div class="modal" style="max-width: 400px;">
+    <div class="modal-header">
+      <h2>Stop Service</h2>
+      <button class="btn-icon" onclick="closeModal('stopModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>Stop the NanoClaw service?</p>
+      <p style="color: var(--text-secondary); font-size: 13px; margin-top: 8px;">The service will not restart automatically. You will need to start it manually.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('stopModal')">Cancel</button>
+      <button class="btn btn-danger" onclick="doStopService()">Stop</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reconnect Overlay -->
+<div class="reconnect-overlay" id="reconnectOverlay">
+  <span class="spinner"></span>
+  <p class="reconnect-text" id="reconnectText">Reconnecting to NanoClaw...</p>
+  <p class="reconnect-sub">The service is restarting</p>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
@@ -874,6 +1101,15 @@
     sessions: {},
     activeTab: 'tasks',
     historyLimit: 50,
+    // Memory
+    memorySummary: [],
+    memoryLayers: null,
+    selectedMemoryGroup: null,
+    expandedMemoryFiles: {},
+    expandedMemoryPanels: { global: true, group: true, autoMemory: true, mounts: false },
+    // Service
+    serviceStatus: { status: 'unknown', platform: 'unknown' },
+    reconnecting: false,
   };
 
   let autoRefresh = true;
@@ -1163,6 +1399,354 @@
     refreshActiveTab();
   }
 
+  // ── Memory: data loading ────────────────────────────────────────────
+  async function loadMemorySummary() {
+    try {
+      state.memorySummary = await api('GET', '/api/memory');
+      populateMemoryGroupSelect();
+    } catch (e) {
+      console.error('Failed to load memory summary:', e);
+    }
+  }
+
+  async function loadMemoryLayers(groupFolder) {
+    if (!groupFolder) {
+      state.memoryLayers = null;
+      renderMemory();
+      return;
+    }
+    try {
+      state.memoryLayers = await api('GET', '/api/memory/' + encodeURIComponent(groupFolder));
+      renderMemory();
+    } catch (e) {
+      console.error('Failed to load memory layers:', e);
+      state.memoryLayers = null;
+      renderMemory();
+    }
+  }
+
+  function populateMemoryGroupSelect() {
+    var sel = document.getElementById('memoryGroupSelect');
+    var currentVal = sel.value;
+    sel.textContent = '';
+    var placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Select a group...';
+    sel.appendChild(placeholder);
+
+    for (var i = 0; i < state.memorySummary.length; i++) {
+      var s = state.memorySummary[i];
+      var opt = document.createElement('option');
+      opt.value = s.groupFolder;
+      var counts = [];
+      if (s.hasGlobal) counts.push('global');
+      if (s.hasGroup) counts.push('group');
+      if (s.autoMemoryCount > 0) counts.push(s.autoMemoryCount + ' memories');
+      if (s.additionalMountCount > 0) counts.push(s.additionalMountCount + ' mounts');
+      opt.textContent = s.groupName + (counts.length ? ' (' + counts.join(', ') + ')' : '');
+      sel.appendChild(opt);
+    }
+
+    // Restore selection
+    if (state.selectedMemoryGroup) {
+      sel.value = state.selectedMemoryGroup;
+    } else if (currentVal) {
+      sel.value = currentVal;
+    }
+  }
+
+  function onMemoryGroupChange() {
+    var sel = document.getElementById('memoryGroupSelect');
+    state.selectedMemoryGroup = sel.value || null;
+    state.expandedMemoryFiles = {};
+    if (state.selectedMemoryGroup) {
+      loadMemoryLayers(state.selectedMemoryGroup);
+    } else {
+      state.memoryLayers = null;
+      renderMemory();
+    }
+  }
+
+  // ── Memory: rendering ───────────────────────────────────────────────
+  function renderMemory() {
+    var container = document.getElementById('memoryContent');
+    container.textContent = '';
+
+    if (!state.memoryLayers) {
+      container.appendChild(el('div', { className: 'empty-state' },
+        el('p', null, 'Select a group to view its memory layers')));
+      return;
+    }
+
+    var layers = state.memoryLayers;
+
+    // Layer 1: Global Memory
+    container.appendChild(renderMemoryPanel(
+      'global', 'Global Memory', 'Shared instructions loaded by all groups',
+      layers.global,
+      'No global memory file (groups/global/CLAUDE.md)'
+    ));
+
+    // Layer 2: Group Memory
+    container.appendChild(renderMemoryPanel(
+      'group', 'Group Memory', 'Instructions specific to this group',
+      layers.group,
+      'No group memory file (groups/' + layers.groupFolder + '/CLAUDE.md)'
+    ));
+
+    // Layer 3: Auto-Memory
+    var autoPanel = el('div', { className: 'memory-panel' });
+    var isAutoExpanded = state.expandedMemoryPanels.autoMemory;
+    var autoHeader = el('div', {
+      className: 'memory-layer-header' + (isAutoExpanded ? ' expanded' : ''),
+      onClick: function() {
+        state.expandedMemoryPanels.autoMemory = !state.expandedMemoryPanels.autoMemory;
+        renderMemory();
+      },
+    }, [
+      el('h4', null, [
+        textNode('Auto-Memory'),
+        el('span', { style: { fontWeight: '400', color: 'var(--text-muted)', fontSize: '12px' } },
+          ' \u2014 ' + layers.autoMemory.length + ' file' + (layers.autoMemory.length !== 1 ? 's' : '')),
+      ]),
+      el('span', { className: 'chevron' }, '\u25B6'),
+    ]);
+    autoPanel.appendChild(autoHeader);
+
+    var autoBody = el('div', { className: 'memory-layer-body' + (isAutoExpanded ? ' open' : '') });
+    if (layers.autoMemory.length === 0) {
+      autoBody.appendChild(el('p', { className: 'memory-empty' }, 'No auto-memory files'));
+    } else {
+      autoBody.appendChild(renderAutoMemoryTable(layers.autoMemory));
+    }
+    autoPanel.appendChild(autoBody);
+    container.appendChild(autoPanel);
+
+    // Layer 4: Additional Mounts (if any)
+    if (layers.additionalMounts.length > 0) {
+      container.appendChild(renderMountsPanel(layers.additionalMounts));
+    }
+  }
+
+  function renderMemoryPanel(key, title, subtitle, content, emptyMsg) {
+    var panel = el('div', { className: 'memory-panel' });
+    var isExpanded = state.expandedMemoryPanels[key];
+
+    var header = el('div', {
+      className: 'memory-layer-header' + (isExpanded ? ' expanded' : ''),
+      onClick: function() {
+        state.expandedMemoryPanels[key] = !state.expandedMemoryPanels[key];
+        renderMemory();
+      },
+    }, [
+      el('h4', null, [
+        textNode(title),
+        el('span', { style: { fontWeight: '400', color: 'var(--text-muted)', fontSize: '12px' } },
+          ' \u2014 ' + subtitle),
+      ]),
+      el('span', { className: 'chevron' }, '\u25B6'),
+    ]);
+    panel.appendChild(header);
+
+    var body = el('div', { className: 'memory-layer-body' + (isExpanded ? ' open' : '') });
+    if (content) {
+      body.appendChild(el('pre', { className: 'memory-content' }, content));
+    } else {
+      body.appendChild(el('p', { className: 'memory-empty' }, emptyMsg));
+    }
+    panel.appendChild(body);
+    return panel;
+  }
+
+  function renderAutoMemoryTable(files) {
+    var thead = el('thead', null, el('tr', null, [
+      el('th', null, 'File'),
+      el('th', null, 'Type'),
+      el('th', null, 'Description'),
+    ]));
+
+    var tbody = document.createElement('tbody');
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      var isIndex = f.filename === 'MEMORY.md';
+      var isExpanded = state.expandedMemoryFiles[f.filename];
+      var fm = f.frontmatter || {};
+
+      var nameTd = el('td', { style: { fontWeight: isIndex ? '600' : '400' } },
+        isIndex ? 'MEMORY.md (index)' : (fm.name || f.filename));
+      var typeTd = el('td', null);
+      if (fm.type) {
+        var safeType = /^[a-z0-9-]+$/i.test(fm.type) ? fm.type : 'unknown';
+        typeTd.appendChild(el('span', { className: 'memory-type-badge memory-type-' + safeType }, fm.type));
+      } else if (isIndex) {
+        typeTd.appendChild(el('span', { style: { color: 'var(--text-muted)', fontSize: '12px' } }, 'index'));
+      } else {
+        typeTd.appendChild(textNode('\u2014'));
+      }
+      var descTd = el('td', { style: { color: 'var(--text-secondary)', fontSize: '12px' } },
+        fm.description || '\u2014');
+
+      var row = el('tr', {
+        className: 'memory-file-row',
+        onClick: (function(filename) { return function() {
+          state.expandedMemoryFiles[filename] = !state.expandedMemoryFiles[filename];
+          renderMemory();
+        }; })(f.filename),
+      }, [nameTd, typeTd, descTd]);
+      tbody.appendChild(row);
+
+      // Expanded content row
+      if (isExpanded) {
+        var contentTd = el('td', { colspan: '3', className: 'memory-file-content' },
+          el('pre', null, f.content || '(empty)'));
+        tbody.appendChild(el('tr', { className: 'logs-row' }, contentTd));
+      }
+    }
+
+    return el('div', { className: 'table-wrapper' },
+      el('table', null, [thead, tbody]));
+  }
+
+  function renderMountsPanel(mounts) {
+    var panel = el('div', { className: 'memory-panel' });
+    var isExpanded = state.expandedMemoryPanels.mounts;
+
+    var header = el('div', {
+      className: 'memory-layer-header' + (isExpanded ? ' expanded' : ''),
+      onClick: function() {
+        state.expandedMemoryPanels.mounts = !state.expandedMemoryPanels.mounts;
+        renderMemory();
+      },
+    }, [
+      el('h4', null, [
+        textNode('Additional Mounts'),
+        el('span', { style: { fontWeight: '400', color: 'var(--text-muted)', fontSize: '12px' } },
+          ' \u2014 ' + mounts.length + ' mount' + (mounts.length !== 1 ? 's' : '')),
+      ]),
+      el('span', { className: 'chevron' }, '\u25B6'),
+    ]);
+    panel.appendChild(header);
+
+    var body = el('div', { className: 'memory-layer-body' + (isExpanded ? ' open' : '') });
+    for (var i = 0; i < mounts.length; i++) {
+      var m = mounts[i];
+      body.appendChild(el('h4', { style: { fontSize: '12px', fontWeight: '600', marginTop: i > 0 ? '12px' : '0', marginBottom: '6px' } }, m.name));
+      if (m.claudeMd) {
+        body.appendChild(el('pre', { className: 'memory-content' }, m.claudeMd));
+      } else {
+        body.appendChild(el('p', { className: 'memory-empty' }, 'No CLAUDE.md in this mount'));
+      }
+    }
+    panel.appendChild(body);
+    return panel;
+  }
+
+  // ── Service: loading & rendering ────────────────────────────────────
+  async function loadServiceStatus() {
+    try {
+      state.serviceStatus = await api('GET', '/api/service/status');
+      renderServiceStatus();
+    } catch (e) {
+      // Server unreachable — if not in reconnect mode, mark unknown
+      if (!state.reconnecting) {
+        state.serviceStatus = { status: 'unknown', platform: 'unknown' };
+        renderServiceStatus();
+      }
+    }
+  }
+
+  function renderServiceStatus() {
+    var dot = document.getElementById('serviceDot');
+    var text = document.getElementById('serviceStatusText');
+    var s = state.serviceStatus;
+
+    dot.className = 'status-dot';
+    if (s.status === 'running') {
+      dot.classList.add('status-dot-green');
+      text.textContent = 'Running';
+    } else if (s.status === 'stopped') {
+      dot.classList.add('status-dot-gray');
+      text.textContent = 'Stopped';
+    } else {
+      dot.classList.add('status-dot-gray');
+      text.textContent = s.platform === 'unknown' ? 'No service manager' : 'Unknown';
+    }
+
+    // Hide controls on unsupported platforms
+    var controls = document.getElementById('serviceControls');
+    if (s.platform === 'unknown') {
+      controls.style.display = 'none';
+    } else {
+      controls.style.display = '';
+    }
+  }
+
+  async function restartService() {
+    if (!confirm('Restart NanoClaw? The dashboard will reconnect automatically.')) return;
+    try {
+      await api('POST', '/api/service/restart');
+      startReconnectLoop();
+    } catch (e) {
+      toast('Error: ' + e.message, 'error');
+    }
+  }
+
+  function confirmStopService() {
+    openModal('stopModal');
+  }
+
+  async function doStopService() {
+    closeModal('stopModal');
+    try {
+      await api('POST', '/api/service/stop');
+      toast('Service stop requested');
+      state.serviceStatus = { status: 'stopped', platform: state.serviceStatus.platform };
+      renderServiceStatus();
+      stopAutoRefresh();
+    } catch (e) {
+      toast('Error: ' + e.message, 'error');
+    }
+  }
+
+  function startReconnectLoop() {
+    state.reconnecting = true;
+    stopAutoRefresh();
+    var overlay = document.getElementById('reconnectOverlay');
+    overlay.classList.add('open');
+
+    var attempts = 0;
+    var maxAttempts = 60;
+
+    function tryReconnect() {
+      attempts++;
+      fetch('/api/service/status').then(function(res) {
+        if (res.ok) {
+          // Server is back
+          overlay.classList.remove('open');
+          state.reconnecting = false;
+          toast('Service restarted');
+          init();
+        } else {
+          scheduleRetry();
+        }
+      }).catch(function() {
+        scheduleRetry();
+      });
+    }
+
+    function scheduleRetry() {
+      if (attempts < maxAttempts) {
+        setTimeout(tryReconnect, 2000);
+      } else {
+        document.getElementById('reconnectText').textContent =
+          'Could not reconnect. Check the service manually.';
+      }
+    }
+
+    // Wait before first attempt to give the service time to stop
+    setTimeout(tryReconnect, 3000);
+  }
+
   var tabBtns = document.querySelectorAll('.tab-btn');
   for (var i = 0; i < tabBtns.length; i++) {
     tabBtns[i].addEventListener('click', function() {
@@ -1417,6 +2001,15 @@
       await loadContainerHistory();
     } else if (state.activeTab === 'sessions') {
       await loadSessions();
+    } else if (state.activeTab === 'memory') {
+      await loadMemorySummary();
+      if (state.selectedMemoryGroup) {
+        await loadMemoryLayers(state.selectedMemoryGroup);
+      }
+    }
+    // Always poll service status
+    if (!state.reconnecting) {
+      loadServiceStatus();
     }
   }
 
@@ -1618,8 +2211,9 @@
   // ── Init ─────────────────────────────────────────────────────────────
   async function init() {
     await loadGroups();
+    await loadServiceStatus();
     await refreshActiveTab();
-    startAutoRefresh();
+    if (autoRefresh) startAutoRefresh();
   }
 
   init();

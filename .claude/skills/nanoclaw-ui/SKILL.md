@@ -1,6 +1,6 @@
 ---
 name: nanoclaw-ui
-description: Add a web-based dashboard UI for monitoring and managing NanoClaw tasks, containers, and sessions. Accessible at http://127.0.0.1:3737 with dark/light theme support. Use when the user wants a dashboard, web UI, task monitor, or container monitor.
+description: Add a web-based dashboard UI for monitoring and managing NanoClaw tasks, containers, sessions, and memory layers. Includes service start/stop/restart controls. Accessible at http://127.0.0.1:3737 with dark/light theme support.
 triggers:
   - "nanoclaw.?ui.*setup|setup.*dashboard|add.*dashboard|install.*dashboard"
   - "nanoclaw.?ui.*config|config.*dashboard|dashboard.*config|dashboard.*port|dashboard.*settings"
@@ -12,11 +12,21 @@ A lightweight, self-contained web dashboard for managing NanoClaw from your brow
 
 ## What it does
 
-Three tabs give you full visibility and control:
+Four tabs give you full visibility and control:
 
 - **Tasks** — view, create, edit, pause/resume, delete, and manually trigger scheduled tasks. See run history with duration, status, and error details for each execution.
 - **Containers** — monitor active container agents in real time, view queue depth (active/max/waiting), browse container run history with duration and exit status.
 - **Sessions** — inspect conversation sessions per group and clear them when needed.
+- **Memory** — visualize the three-layer memory hierarchy per agent/group: global CLAUDE.md, group CLAUDE.md, and auto-memory files with frontmatter metadata (name, type, description). Browse additional mount CLAUDE.md files.
+
+### Service controls
+
+The dashboard header includes service controls that auto-detect the platform:
+
+- **Status indicator** — green dot when running, gray when stopped
+- **Restart** — restart the NanoClaw service (auto-reconnects)
+- **Stop** — stop the service with confirmation dialog
+- Supports macOS (launchd) and Linux (systemd) service managers
 
 ### Additional features
 
@@ -74,13 +84,13 @@ For other conflicts, read the conflicted files and resolve by understanding the 
 
 | File | Change |
 |------|--------|
-| `src/dashboard.ts` | **New** — HTTP server with REST API for tasks, containers, sessions |
-| `src/dashboard.html` | **New** — Single-page app (vanilla JS, no dependencies) |
-| `src/dashboard.test.ts` | **New** — Comprehensive test suite |
+| `src/dashboard.ts` | **New** — HTTP server with REST API for tasks, containers, sessions, memory, service control |
+| `src/dashboard.html` | **New** — Single-page app (vanilla JS, no dependencies) with 4 tabs + service controls |
+| `src/dashboard.test.ts` | **New** — Comprehensive test suite (53 tests) |
 | `src/config.ts` | **Modified** — adds `DASHBOARD_PORT` and `DASHBOARD_ENABLED` config |
-| `src/index.ts` | **Modified** — dashboard startup/shutdown, container run tracking |
+| `src/index.ts` | **Modified** — dashboard startup/shutdown, container run tracking, memory reading, service control |
 | `src/db.ts` | **Modified** — `container_runs` table, query functions, `getTaskRunLogs` |
-| `src/types.ts` | **Modified** — `ContainerRun`, `ActiveContainer` interfaces |
+| `src/types.ts` | **Modified** — `ContainerRun`, `ActiveContainer`, `MemoryFile`, `GroupMemoryLayers`, `MemorySummary`, `ServiceStatus` interfaces |
 | `src/group-queue.ts` | **Modified** — active container monitoring and control methods |
 | `src/task-scheduler.ts` | **Modified** — manual task execution, container run tracking |
 | `src/container-runner.ts` | **Modified** — `timedOut`/`hadOutput` output fields |
@@ -219,6 +229,22 @@ Container runs are recorded only for runs that happen **after** the dashboard is
 - Verify the `chat_jid` references a registered group
 - Check that the task status is `active` (not `paused`)
 - Confirm the cron expression or interval is valid
+
+### Memory tab shows no data
+
+- Memory files are read from `groups/` and `data/sessions/` directories — they must exist on the host
+- Global memory requires `groups/global/CLAUDE.md` to exist
+- Auto-memory appears only after agents have saved memories during conversations
+
+### Service controls not visible
+
+- Service controls are hidden on unsupported platforms (only macOS launchd and Linux systemd are supported)
+- Verify the service is configured: check for `launchd/com.nanoclaw.plist` (macOS) or the systemd unit file (Linux)
+
+### Restart button does nothing
+
+- On macOS, verify the plist is loaded: `launchctl print gui/$(id -u)/com.nanoclaw`
+- On Linux, verify the service exists: `systemctl --user status nanoclaw`
 
 ### Port already in use
 

@@ -10,8 +10,11 @@ import { logger } from './logger.js';
 import {
   ActiveContainer,
   ContainerRun,
+  GroupMemoryLayers,
+  MemorySummary,
   RegisteredGroup,
   ScheduledTask,
+  ServiceStatus,
   TaskRunLog,
 } from './types.js';
 
@@ -52,6 +55,13 @@ export interface DashboardDeps {
   // Session monitoring
   getSessions?: () => Record<string, string>;
   clearSession?: (groupFolder: string) => void;
+  // Memory visualization
+  getMemorySummary?: () => Promise<MemorySummary[]>;
+  getMemoryLayers?: (groupFolder: string) => Promise<GroupMemoryLayers | null>;
+  // Service control
+  getServiceStatus?: () => Promise<ServiceStatus>;
+  restartService?: () => Promise<void>;
+  stopService?: () => Promise<void>;
 }
 
 // --- Helpers ---
@@ -521,6 +531,88 @@ export async function handleRequest(
         sendJson(res, 200, { cleared: true });
         return;
       }
+    }
+
+    // --- Memory visualization ---
+
+    // GET /api/memory
+    if (pathname === '/api/memory' && method === 'GET') {
+      if (!deps.getMemorySummary) {
+        sendJson(res, 200, []);
+        return;
+      }
+      sendJson(res, 200, await deps.getMemorySummary());
+      return;
+    }
+
+    // GET /api/memory/:groupFolder
+    if (pathname.startsWith('/api/memory/')) {
+      const memMatch = matchRoute('/api/memory/:groupFolder', pathname);
+      if (memMatch) {
+        if (method !== 'GET') {
+          sendError(res, 405, `Method ${method} not allowed`);
+          return;
+        }
+        if (!deps.getMemoryLayers) {
+          sendError(res, 501, 'Memory visualization not available');
+          return;
+        }
+        const groupFolder = decodeURIComponent(memMatch.params.groupFolder);
+        if (!groupFolder) {
+          sendError(res, 400, 'groupFolder is required');
+          return;
+        }
+        const layers = await deps.getMemoryLayers(groupFolder);
+        if (!layers) {
+          sendError(res, 404, `Group ${groupFolder} not found`);
+          return;
+        }
+        sendJson(res, 200, layers);
+        return;
+      }
+    }
+
+    // --- Service control ---
+
+    // GET /api/service/status
+    if (pathname === '/api/service/status' && method === 'GET') {
+      if (!deps.getServiceStatus) {
+        sendJson(res, 200, { status: 'unknown', platform: 'unknown' });
+        return;
+      }
+      sendJson(res, 200, await deps.getServiceStatus());
+      return;
+    }
+
+    // POST /api/service/restart
+    if (pathname === '/api/service/restart' && method === 'POST') {
+      if (!deps.restartService) {
+        sendError(res, 501, 'Service restart not available');
+        return;
+      }
+      sendJson(res, 200, { restarting: true });
+      // Delay restart so the HTTP response flushes first
+      setTimeout(() => {
+        deps.restartService!().catch((err) => {
+          logger.error({ err }, 'Service restart failed');
+        });
+      }, 100);
+      return;
+    }
+
+    // POST /api/service/stop
+    if (pathname === '/api/service/stop' && method === 'POST') {
+      if (!deps.stopService) {
+        sendError(res, 501, 'Service stop not available');
+        return;
+      }
+      sendJson(res, 200, { stopping: true });
+      setTimeout(() => {
+        deps.stopService!().catch((err) => {
+          logger.error({ err }, 'Service stop failed');
+        });
+      }, 100);
+      return;
     }
 
     // Unknown route
